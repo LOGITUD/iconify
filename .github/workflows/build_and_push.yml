@@ -7,18 +7,7 @@ on:
 
 jobs:
     build_and_push:
-        strategy:
-          matrix:
-            platform: [amd64, arm64]
-            include:
-              - platform: amd64
-                runner: blacksmith-4vcpu-ubuntu-2404
-                docker_platform: linux/amd64
-              - platform: arm64
-                runner: blacksmith-4vcpu-ubuntu-2404-arm
-                docker_platform: linux/arm64
-
-        runs-on: ${{ matrix.runner }}
+        runs-on: ubuntu-latest
 
         environment:
           name: Production
@@ -29,6 +18,11 @@ jobs:
             - uses: actions/setup-node@v4
               with:
                   node-version: '22'
+
+            - name: Set up QEMU
+              uses: docker/setup-qemu-action@v3
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
 
             - name: Install dependencies
               run: npm install
@@ -44,15 +38,14 @@ jobs:
                 registry: '${{ secrets.REGISTRY_URL }}'
 
             - name: Build and push Image
-              uses: useblacksmith/build-push-action@v1
+              uses: docker/build-push-action@v6
               with:
                 push: true
                 tags: |
-                  ${{ secrets.REGISTRY_URL }}/${{ secrets.REGISTRY_REPO }}/${{ github.repository }}:${{ matrix.platform }}-${{ github.ref_name }}
-                  ${{ secrets.REGISTRY_URL }}/${{ secrets.REGISTRY_REPO }}/${{ github.repository }}:${{ matrix.platform }}-latest
-                platforms: ${{ matrix.docker_platform }}
+                  ${{ secrets.REGISTRY_URL }}/${{ secrets.REGISTRY_REPO }}/${{ github.repository }}:${{ github.ref_name }}
+                  ${{ secrets.REGISTRY_URL }}/${{ secrets.REGISTRY_REPO }}/${{ github.repository }}:latest
+                platforms: linux/amd64,linux/arm64
                 build-args: |
-                  ARCH=${{ matrix.platform }}
                   ICONIFY_API_VERSION=${{ github.ref_name }}
                   SRC_PATH=./
                   TAG_SUFFIX=default

@@ -1,11 +1,10 @@
-ARG ARCH=amd64
-ARG NODE_VERSION=18
+ARG NODE_VERSION=22
 ARG OS=bullseye-slim
 ARG ICONIFY_API_VERSION=3.1.1
 ARG SRC_PATH=./
 
 #### Stage BASE ########################################################################################################
-FROM ${ARCH}/node:${NODE_VERSION}-${OS} AS base
+FROM node:${NODE_VERSION}-${OS} AS base
 
 # This gives node.js apps access to the OS CAs
 ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
@@ -59,7 +58,6 @@ ARG BUILD_DATE
 ARG BUILD_VERSION
 ARG BUILD_REF
 ARG ICONIFY_API_VERSION
-ARG ARCH
 ARG TAG_SUFFIX=default
 
 LABEL org.label-schema.build-date=${BUILD_DATE} \
@@ -72,7 +70,6 @@ LABEL org.label-schema.build-date=${BUILD_DATE} \
     org.label-schema.vcs-ref=${BUILD_REF} \
     org.label-schema.vcs-type="Git" \
     org.label-schema.vcs-url="https://github.com/iconify/api" \
-    org.label-schema.arch=${ARCH} \
     authors="Vjacheslav Trushkin,Logitud"
 
 RUN rm -rf /tmp/*
