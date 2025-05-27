@@ -73,7 +73,7 @@ LABEL org.label-schema.build-date=${BUILD_DATE} \
     org.label-schema.vcs-type="Git" \
     org.label-schema.vcs-url="https://github.com/iconify/api" \
     org.label-schema.arch=${ARCH} \
-    authors="Vjacheslav Trushkin"
+    authors="Vjacheslav Trushkin,Logitud"
 
 RUN rm -rf /tmp/*
 

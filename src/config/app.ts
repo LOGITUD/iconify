@@ -25,7 +25,7 @@ export const appConfig: AppConfig = {
 	log: true,
 
 	// Enable update
-	allowUpdate: true,
+	allowUpdate: false,
 
 	// Required parameter to include in `/update` query to trigger update
 	// Value must match environment variable `APP_UPDATE_SECRET`

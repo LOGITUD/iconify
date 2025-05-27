@@ -8,3 +8,6 @@ tsconfig.tsbuildinfo
 /lib
 /cache
 /tmp
+importer.js
+temp/
+icons/

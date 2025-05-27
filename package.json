@@ -19,21 +19,18 @@
 		"build": "tsc -b",
 		"test": "vitest --config vitest.config.mjs",
 		"start": "node --expose-gc lib/index.js",
-		"docker:build": "./docker.sh",
-		"docker:start": "docker run -d -p 3000:3000 iconify/api",
-		"docker:stop": "docker ps -q --filter ancestor=iconify/api | xargs -r docker stop",
-		"docker:cleanup": "docker ps -q -a --filter ancestor=iconify/api | xargs -r docker rm",
-		"docker:publish": "docker push iconify/api"
+		"importer": "tsc --project tsconfig-importer.json && node importer.js && rm importer.js"
 	},
 	"dependencies": {
 		"@fastify/formbody": "^7.4.0",
-		"@iconify/tools": "^4.1.1",
 		"@iconify/types": "^2.0.0",
 		"@iconify/utils": "^2.3.0",
 		"dotenv": "^16.4.7",
 		"fastify": "^4.29.0"
 	},
 	"devDependencies": {
+		"@aws-sdk/client-s3": "^3.758.0",
+		"@iconify/tools": "^4.1.2",
 		"@types/jest": "^29.5.14",
 		"@types/node": "^20.17.17",
 		"typescript": "^5.7.3",

@@ -46,6 +46,7 @@ export function createJSONDirectoryImporter<Downloader extends BaseDownloader<Im
 		if (filter) {
 			prefixes = prefixes.filter(filter);
 		}
+
 		return prefixes;
 	};
 

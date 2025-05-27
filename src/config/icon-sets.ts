@@ -37,13 +37,15 @@ export async function getImporters(): Promise<Importer[]> {
 	 * Add custom icons from `icons` directory
 	 */
 	if (await directoryExists('icons')) {
+		console.log('Adding custom icons from `icons` directory');
 		importers.push(
 			createJSONDirectoryImporter(new DirectoryDownloader<ImportedData>('icons'), {
 				// Skip icon sets with mismatched prefix
-				ignoreInvalidPrefix: false,
+				ignoreInvalidPrefix: true,
 
 				// Filter icon sets. Returns true if icon set should be included, false if not.
 				filter: (prefix) => {
+					console.log('Loading custom icon-set', prefix);
 					return true;
 				},
 			})
