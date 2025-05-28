@@ -17,7 +17,7 @@ const __dirname = path.dirname(__filename);
 	console.log('Starting API initialization...');
 
 	// List files in icons directory
-	const files = await readdir(path.join(__dirname, '..', 'icons'));
+	const files = await readdir(path.join(__dirname, 'icons'));
 	console.log(files);
 
 	// Init API
