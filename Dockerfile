@@ -39,7 +39,7 @@ WORKDIR /data/iconify-api
 
 #### Stage iconify-api-install #########################################################################################
 FROM base AS iconify-api-install
-ARG SRC_PATH
+ARG SRC_PATH=./
 
 # Copy package files, install dependencies
 COPY ${SRC_PATH}*.json ./
@@ -53,7 +53,7 @@ COPY ${SRC_PATH}icons/ /data/iconify-api/icons/
 RUN npm run build
 
 #### Stage RELEASE #####################################################################################################
-FROM iconify-api-install AS RELEASE
+FROM iconify-api-install AS release
 ARG BUILD_DATE
 ARG BUILD_VERSION
 ARG BUILD_REF
