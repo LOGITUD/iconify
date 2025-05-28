@@ -1,76 +1,28 @@
-ARG NODE_VERSION=22
-ARG OS=bullseye-slim
-ARG ICONIFY_API_VERSION=3.1.1
+FROM node:22-bullseye-slim
 
-#### Stage BASE ########################################################################################################
-FROM node:${NODE_VERSION}-${OS} AS base
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    bash \
+    curl \
+    nano \
+    git \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean \
+    && rm -rf /tmp/*
 
-# This gives node.js apps access to the OS CAs
-ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
-
-# This handles using special APT sources during build only (it is safe to comment these 3 following lines out):
-RUN cp /etc/apt/sources.list /etc/apt/sources.list.original
-COPY tmp/sources.list /tmp/sources.list.tmp
-RUN ([ -s /tmp/sources.list.tmp ] && mv -f /tmp/sources.list.tmp /etc/apt/sources.list && cat /etc/apt/sources.list) || (cat /etc/apt/sources.list)
-
-# Add temporary CERTs needed during build (it is safe to comment the following 1 line out):
-COPY tmp/build-ca-cert.crt /usr/local/share/ca-certificates/build-ca-cert.crt
-
-# Install tools, create data dir, add user and set rights
-RUN set -ex && \
-    apt-get update && \
-    apt-get install --no-install-recommends -y \
-        ca-certificates \
-        bash \
-        curl \
-        nano \
-		git && \
-    mkdir -p /data/iconify-api && \
-    apt-get clean && \
-    rm -rf /tmp/* && \
-    # Restore the original sources.list
-    ([ -s /etc/apt/sources.list.original ] && mv /etc/apt/sources.list.original /etc/apt/sources.list) && \
-    # Remove the temporary build CA cert
-    rm -f /usr/local/share/ca-certificates/build-ca-cert.crt
-
-# Set work directory
 WORKDIR /data/iconify-api
 
-#### Stage iconify-api-install #########################################################################################
-FROM base AS iconify-api-install
-
-# Copy package files, install dependencies
+# Copie les fichiers package.json et package-lock.json (ou autre gestionnaire)
 COPY *.json ./
+
 RUN npm ci
 
-# Copy src and icons in the current directory
-COPY src/ /data/iconify-api/src/
-COPY icons/ /data/iconify-api/icons/
+# Copie le code source et les icônes
+COPY src/ ./src/
+COPY icons/ ./icons/
 
-# Build API
 RUN npm run build
 
-#### Stage RELEASE #####################################################################################################
-FROM iconify-api-install AS release
-ARG ICONIFY_API_VERSION
-ARG TAG_SUFFIX=default
-
-LABEL org.label-schema.docker.dockerfile="Dockerfile" \
-    org.label-schema.license="MIT" \
-    org.label-schema.name="Iconify API" \
-    org.label-schema.description="Node.js version of api.iconify.design" \
-    org.label-schema.url="https://github.com/iconify/api" \
-    authors="Vjacheslav Trushkin,Logitud"
-
-RUN rm -rf /tmp/*
-
-# Env variables
-ENV ICONIFY_API_VERSION=$ICONIFY_API_VERSION
-
-# Expose the listening port of Iconify API
 EXPOSE 3000
-
-# Add a healthcheck (default every 30 secs)
-HEALTHCHECK CMD curl http://localhost:3000/ || exit 1
 
 CMD ["npm", "run", "start"]

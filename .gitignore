@@ -10,4 +10,5 @@ tsconfig.tsbuildinfo
 /tmp
 importer.js
 temp/
-icons/
+icons/*
+!icons/.gitkeep
