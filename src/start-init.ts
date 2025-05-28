@@ -4,6 +4,10 @@ import { loadEnvConfig } from './misc/load-config.js';
 import { initAPI } from './init.js';
 import path from 'path';
 import { readdir } from 'fs/promises';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 (async () => {
 	// Configure environment
@@ -13,7 +17,7 @@ import { readdir } from 'fs/promises';
 	console.log('Starting API initialization...');
 
 	// List files in icons directory
-	const files = await readdir(path.join(__dirname, 'icons'));
+	const files = await readdir(path.join(__dirname, '..', 'icons'));
 	console.log(files);
 
 	// Init API
