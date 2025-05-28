@@ -45,8 +45,6 @@ jobs:
             - name: Prepare icons
               run: npm run importer
 
-            - run: ls -la
-
             - name: Validate src and icons directories
               run: |
                 echo "🔍 Vérification pré-build…"

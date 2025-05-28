@@ -46,8 +46,10 @@ COPY ${SRC_PATH}*.json ./
 RUN npm ci
 
 # Copy src and icons
-COPY src/ /data/iconify-api/src/
-COPY icons/ /data/iconify-api/icons/
+RUN mkdir -p /data/iconify-api/icons && mkdir -p /data/iconify-api/src
+
+COPY ${SRC_PATH}src/ /data/iconify-api/src/
+COPY ${SRC_PATH}icons/ /data/iconify-api/icons/
 
 # Build API
 RUN npm run build
