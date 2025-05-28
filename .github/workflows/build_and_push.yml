@@ -45,10 +45,12 @@ jobs:
             - name: Prepare icons
               run: npm run importer
 
-            - name: Validate tmp and icons directories
+            - run: ls -la
+
+            - name: Validate src and icons directories
               run: |
                 echo "🔍 Vérification pré-build…"
-                for d in tmp icons; do
+                for d in src icons; do
                   if [ ! -d "$d" ]; then
                     echo "❌ Directory '$d' not found in repo."
                     exit 1
@@ -58,9 +60,7 @@ jobs:
                     exit 1
                   fi
                 done
-                echo "✅ tmp and icons directories are present and non-empty."
-
-            - run: ls -la
+                echo "✅ src and icons directories are present and non-empty."
 
             - name: Build and push Image
               uses: docker/build-push-action@v6
