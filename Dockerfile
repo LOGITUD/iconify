@@ -1,7 +1,6 @@
 ARG NODE_VERSION=22
 ARG OS=bullseye-slim
 ARG ICONIFY_API_VERSION=3.1.1
-ARG SRC_PATH=./
 
 #### Stage BASE ########################################################################################################
 FROM node:${NODE_VERSION}-${OS} AS base
@@ -39,40 +38,28 @@ WORKDIR /data/iconify-api
 
 #### Stage iconify-api-install #########################################################################################
 FROM base AS iconify-api-install
-ARG SRC_PATH=./
 
 # Copy package files, install dependencies
-COPY ${SRC_PATH}*.json ./
+COPY *.json ./
 RUN npm ci
 
-# Copy src and icons
-RUN mkdir -p /data/iconify-api/icons && mkdir -p /data/iconify-api/src
-
 # Copy src and icons in the current directory
-COPY ${SRC_PATH}src/ /data/iconify-api/src/
-COPY ${SRC_PATH}icons/ /data/iconify-api/icons/
+COPY src/ /data/iconify-api/src/
+COPY icons/ /data/iconify-api/icons/
 
 # Build API
 RUN npm run build
 
 #### Stage RELEASE #####################################################################################################
 FROM iconify-api-install AS release
-ARG BUILD_DATE
-ARG BUILD_VERSION
-ARG BUILD_REF
 ARG ICONIFY_API_VERSION
 ARG TAG_SUFFIX=default
 
-LABEL org.label-schema.build-date=${BUILD_DATE} \
-    org.label-schema.docker.dockerfile="Dockerfile" \
+LABEL org.label-schema.docker.dockerfile="Dockerfile" \
     org.label-schema.license="MIT" \
     org.label-schema.name="Iconify API" \
-    org.label-schema.version=${BUILD_VERSION} \
     org.label-schema.description="Node.js version of api.iconify.design" \
     org.label-schema.url="https://github.com/iconify/api" \
-    org.label-schema.vcs-ref=${BUILD_REF} \
-    org.label-schema.vcs-type="Git" \
-    org.label-schema.vcs-url="https://github.com/iconify/api" \
     authors="Vjacheslav Trushkin,Logitud"
 
 RUN rm -rf /tmp/*
