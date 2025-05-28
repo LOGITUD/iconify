@@ -19,8 +19,6 @@ jobs:
               with:
                   node-version: '22'
 
-            - name: Set up QEMU
-              uses: docker/setup-qemu-action@v3
             - name: Set up Docker Buildx
               uses: docker/setup-buildx-action@v3
 
@@ -67,7 +65,7 @@ jobs:
                 tags: |
                   ${{ secrets.REGISTRY_URL }}/${{ secrets.REGISTRY_REPO }}/iconify:${{ github.ref_name }}
                   ${{ secrets.REGISTRY_URL }}/${{ secrets.REGISTRY_REPO }}/iconify:latest
-                platforms: linux/amd64,linux/arm64
+                platforms: linux/amd64
                 build-args: |
                   ICONIFY_API_VERSION=${{ github.ref_name }}
                   SRC_PATH=${{ github.workspace }}/

@@ -25,10 +25,4 @@ RUN npm run build
 
 EXPOSE 3000
 
-# Run the command `npm run start` for 1min30 seconds
-RUN npm run start & sleep 90 & pid=$!; sleep 90; kill $pid || true
-
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3000/ || exit 1
-
 CMD ["npm", "run", "start"]
