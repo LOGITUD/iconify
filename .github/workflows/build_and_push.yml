@@ -58,14 +58,7 @@ jobs:
                     exit 1
                   fi
                 done
-                echo "✅ tmp et icons présents et non vides."
-
-            - name: Login to registry
-              uses: docker/login-action@v3
-              with:
-                username: 'nologin'
-                password: '${{ secrets.REGISTRY_PASS }}'
-                registry: '${{ secrets.REGISTRY_URL }}'
+                echo "✅ tmp and icons directories are present and non-empty."
 
             - run: ls -la
 
