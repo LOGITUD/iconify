@@ -45,6 +45,28 @@ jobs:
             - name: Prepare icons
               run: npm run importer
 
+            - name: Validate tmp and icons directories
+              run: |
+                echo "🔍 Vérification pré-build…"
+                for d in tmp icons; do
+                  if [ ! -d "$d" ]; then
+                    echo "❌ Directory '$d' not found in repo."
+                    exit 1
+                  fi
+                  if [ -z "$(ls -A "$d")" ]; then
+                    echo "❌ Directory '$d' is empty."
+                    exit 1
+                  fi
+                done
+                echo "✅ tmp et icons présents et non vides."
+
+            - name: Login to registry
+              uses: docker/login-action@v3
+              with:
+                username: 'nologin'
+                password: '${{ secrets.REGISTRY_PASS }}'
+                registry: '${{ secrets.REGISTRY_URL }}'
+
             - run: ls -la
 
             - name: Build and push Image
@@ -62,3 +84,4 @@ jobs:
                   SRC_PATH=./
                   TAG_SUFFIX=default
                   BUILD_DATE="$(date +"%Y-%m-%dT%H:%M:%SZ")"
+                  CACHEBUST=1
