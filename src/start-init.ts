@@ -1,6 +1,5 @@
 import { config } from 'dotenv';
 import { loaded } from './data/loading.js';
-import { startHTTPServer } from './http/index.js';
 import { loadEnvConfig } from './misc/load-config.js';
 import { initAPI } from './init.js';
 
@@ -9,15 +8,11 @@ import { initAPI } from './init.js';
 	config();
 	loadEnvConfig();
 
-	// Start HTTP server
-	startHTTPServer();
-
 	// Init API
-	// await initAPI({
-	// 	cleanup: true
-	// });
+	await initAPI({
+		cleanup: true
+	});
 
-	// Loaded
 	loaded();
 })()
 	.then(() => {
