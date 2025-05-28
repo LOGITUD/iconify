@@ -48,6 +48,7 @@ RUN npm ci
 # Copy src and icons
 RUN mkdir -p /data/iconify-api/icons && mkdir -p /data/iconify-api/src
 
+# Copy src and icons in the current directory
 COPY ${SRC_PATH}src/ /data/iconify-api/src/
 COPY ${SRC_PATH}icons/ /data/iconify-api/icons/
 
