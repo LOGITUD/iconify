@@ -1,73 +1,77 @@
 name: build_and_push
 
 on:
-  release:
-    types: [published]
+    release:
+        types:
+            - published
 
 jobs:
-  build_and_push:
-    runs-on: ubuntu-latest
+    build_and_push:
+        runs-on: ubuntu-latest
 
-    environment:
-      name: Production
-      url: 'https://iconify.tools.logitud.cloud'
+        environment:
+          name: Production
+          url: 'https://iconify.tools.logitud.cloud'
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: '22'
 
-      - name: Use Node.js 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
+            - name: Set up QEMU
+              uses: docker/setup-qemu-action@v3
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+            - name: Install dependencies
+              run: npm install
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+            - name: Setup env file
+              run: |
+                echo "S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}" > .env
+                echo "S3_REGION=${{ secrets.S3_REGION }}" >> .env
+                echo "S3_ENDPOINT=${{ secrets.S3_ENDPOINT }}" >> .env
+                echo "S3_ACCESS_KEY_ID=${{ secrets.S3_ACCESS_KEY_ID }}" >> .env
+                echo "S3_SECRET_ACCESS_KEY=${{ secrets.S3_SECRET_ACCESS_KEY }}" >> .env
 
-      - name: Install dependencies
-        run: npm install
+            - name: Prepare icons
+              run: npm run importer
 
-      - name: Setup env file
-        run: |
-          echo "S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}" > .env
-          echo "S3_REGION=${{ secrets.S3_REGION }}" >> .env
-          echo "S3_ENDPOINT=${{ secrets.S3_ENDPOINT }}" >> .env
-          echo "S3_ACCESS_KEY_ID=${{ secrets.S3_ACCESS_KEY_ID }}" >> .env
-          echo "S3_SECRET_ACCESS_KEY=${{ secrets.S3_SECRET_ACCESS_KEY }}" >> .env
+            - name: Validate icons directory
+              run: |
+                echo "🔍 Vérification du dossier icons…" 
+                if [ ! -d ./icons ]; then
+                  echo "❌ Erreur: le dossier ./icons n'existe pas."
+                  exit 1
+                fi
+                if [ -z "$(ls -A ./icons)" ]; then
+                  echo "❌ Erreur: le dossier ./icons est vide."
+                  find ./icons -maxdepth 1 -type f -printf ' - %f\n'
+                  exit 1
+                fi
+                echo "✅ Dossier ./icons présent et non vide."
 
-      - name: Prepare icons
-        run: npm run importer
+            - name: Login to registry
+              uses: docker/login-action@v3
+              with:
+                username: 'nologin'
+                password: '${{ secrets.REGISTRY_PASS }}'
+                registry: '${{ secrets.REGISTRY_URL }}'
 
-      - name: Compute build date
-        id: build_date
-        run: |
-          echo "BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_ENV"
-
-      - name: Login to registry
-        uses: docker/login-action@v3
-        with:
-          username: 'nologin'
-          password: ${{ secrets.REGISTRY_PASS }}
-          registry: ${{ secrets.REGISTRY_URL }}
-
-      - name: Build and push image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: Dockerfile
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: |
-            ${{ secrets.REGISTRY_URL }}/${{ secrets.REGISTRY_REPO }}/iconify:${{ github.ref_name }}
-            ${{ secrets.REGISTRY_URL }}/${{ secrets.REGISTRY_REPO }}/iconify:latest
-          cache-from: type=gha,mode=max
-          cache-to:   type=gha,mode=max
-          build-args: |
-            ICONIFY_API_VERSION=${{ github.ref_name }}
-            SRC_PATH=./
-            TAG_SUFFIX=default
-            BUILD_DATE="$(date +"%Y-%m-%dT%H:%M:%SZ")"
-            CACHEBUST=${{ github.run_number }}
+            - name: Build and push Image
+              uses: docker/build-push-action@v6
+              with:
+                push: true
+                tags: |
+                  ${{ secrets.REGISTRY_URL }}/${{ secrets.REGISTRY_REPO }}/iconify:${{ github.ref_name }}
+                  ${{ secrets.REGISTRY_URL }}/${{ secrets.REGISTRY_REPO }}/iconify:latest
+                platforms: linux/amd64,linux/arm64
+                cache-from: type=gha,mode=max
+                cache-to: type=gha,mode=max
+                build-args: |
+                  ICONIFY_API_VERSION=${{ github.ref_name }}
+                  SRC_PATH=./
+                  TAG_SUFFIX=default
+                  BUILD_DATE="$(date +"%Y-%m-%dT%H:%M:%SZ")"
+                  CACHEBUST=1
