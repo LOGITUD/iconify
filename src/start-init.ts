@@ -22,7 +22,9 @@ const __dirname = path.dirname(__filename);
 
 	// Init API
 	await initAPI({
-		cleanup: true
+		cleanup: true,
+		runUpdate: true,
+		initImporters: true
 	});
 
 	loaded();

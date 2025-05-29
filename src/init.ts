@@ -8,6 +8,12 @@ interface InitOptions {
 	// Cleanup storage cache
 	cleanup?: boolean;
 
+	// Run update
+	runUpdate?: boolean;
+
+	// Init importers
+	initImporters?: boolean;
+
 	// Importers
 	importers?: Importer[];
 }
@@ -26,11 +32,17 @@ export async function initAPI(options: InitOptions = {}) {
 	if (!importers) {
 		importers = await getImporters();
 	}
-	for (let i = 0; i < importers.length; i++) {
-		await importers[i].init();
+
+	if (options.initImporters !== false) {
+		for (let i = 0; i < importers.length; i++) {
+			await importers[i].init();
+		}
 	}
 
 	// Update
 	setImporters(importers);
-	updateIconSets();
+
+	if (options.runUpdate !== false) {
+		updateIconSets();
+	}
 }
