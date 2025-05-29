@@ -17,14 +17,12 @@ COPY *.json ./
 
 RUN npm ci
 
-# Copie le code buildé et les icônes
-COPY lib/ ./lib/
-COPY cache/ ./cache/
-COPY icons/ ./icons/
+# Copy all files
+COPY . .
 
-RUN ls -al
+RUN npm run build
 
-RUN chmod 777 -R /data/iconify-api/cache
+RUN npm run init
 
 EXPOSE 3000
 
