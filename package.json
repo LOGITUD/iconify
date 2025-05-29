@@ -16,7 +16,7 @@
 		"node": ">=16.15.0"
 	},
 	"scripts": {
-		"build": "tsc -b ; ln -s ../icons lib/icons",
+		"build": "tsc -b",
 		"test": "vitest --config vitest.config.mjs",
 		"init": "node --expose-gc lib/start-init.js",
 		"start": "node --expose-gc lib/index.js",

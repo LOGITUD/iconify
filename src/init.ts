@@ -8,9 +8,6 @@ interface InitOptions {
 	// Cleanup storage cache
 	cleanup?: boolean;
 
-	// Run update
-	runUpdate?: boolean;
-
 	// Importers
 	importers?: Importer[];
 }
@@ -37,8 +34,5 @@ export async function initAPI(options: InitOptions = {}) {
 
 	// Update
 	setImporters(importers);
-
-	if (options.runUpdate !== false) {
-		updateIconSets();
-	}
+	updateIconSets();
 }

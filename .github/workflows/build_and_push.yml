@@ -60,6 +60,12 @@ jobs:
                 done
                 echo "✅ src and icons directories are present and non-empty."
 
+            - name: Build
+              run: npm run build
+
+            - name: Init API (for cache)
+              run: npm run init
+
             - name: Build and push Image
               uses: docker/build-push-action@v6
               with:

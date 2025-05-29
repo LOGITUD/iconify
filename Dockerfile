@@ -17,13 +17,10 @@ COPY *.json ./
 
 RUN npm ci
 
-# Copie le code source et les icônes
-COPY src/ ./src/
+# Copie le code buildé et les icônes
+COPY lib/ ./lib/
+COPY cache/ ./cache/
 COPY icons/ ./icons/
-
-RUN npm run build
-
-RUN npm run init
 
 EXPOSE 3000
 
