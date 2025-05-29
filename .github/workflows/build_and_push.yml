@@ -47,12 +47,13 @@ jobs:
               run: |
                 echo "🔍 Vérification pré-build…"
                 for d in src icons; do
+                  echo "👀 Vérification du dossier $d"
+                  ls -la "$d"
                   if [ ! -d "$d" ]; then
                     echo "❌ Directory '$d' not found in repo."
                     exit 1
                   fi
                   if [ -z "$(ls -A "$d")" ]; then
-                    ls -la "$d"
                     echo "❌ Directory '$d' is empty."
                     exit 1
                   fi

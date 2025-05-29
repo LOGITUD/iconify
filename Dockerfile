@@ -21,6 +21,8 @@ RUN npm ci
 COPY src/ ./src/
 COPY icons/ ./icons/
 
+RUN ls -la icons
+
 RUN npm run build
 
 RUN npm run init
