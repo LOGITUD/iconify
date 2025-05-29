@@ -13,9 +13,9 @@ import { initAPI } from './init.js';
 	startHTTPServer();
 
 	// Init API
-	// await initAPI({
-	// 	cleanup: false
-	// });
+	await initAPI({
+		cleanup: false
+	});
 
 	// Loaded
 	loaded();

@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     nano \
     git \
+    cpulimit \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean \
     && rm -rf /tmp/*
@@ -17,14 +18,15 @@ COPY *.json ./
 
 RUN npm ci
 
-# Copy all files
-COPY . .
+# Copy source code and icons
+COPY src/ ./src/
+COPY icons/ ./icons/
 
 RUN npm run build
 
-RUN npm run init
+RUN ln -s ../icons lib/icons
 
-RUN npm run link
+RUN npm run init
 
 EXPOSE 3000
 

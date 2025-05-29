@@ -17,10 +17,9 @@
 	},
 	"scripts": {
 		"build": "tsc -b",
-		"link": "mkdir -p icons cache ; rm -rf lib/icons ; ln -s ../icons lib/icons ; rm -rf lib/cache ; ln -s ../cache lib/cache",
 		"test": "vitest --config vitest.config.mjs",
 		"init": "node --expose-gc lib/start-init.js",
-		"start": "node --expose-gc lib/index.js",
+		"start": "cpulimit -f -l 50 -- node --expose-gc lib/index.js",
 		"importer": "tsc --project tsconfig-importer.json && node importer.js && rm importer.js"
 	},
 	"dependencies": {
