@@ -14,7 +14,8 @@ import { initAPI } from './init.js';
 
 	// Init API
 	await initAPI({
-		cleanup: false
+		cleanup: false,
+		runUpdate: false
 	});
 
 	// Loaded
