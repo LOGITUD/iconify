@@ -80,5 +80,20 @@ export function createBaseImporter<Downloader extends BaseDownloader<ImportedDat
 	};
 	Object.assign(obj, baseData);
 
+	// Ajout de la sérialisation du cache
+	(obj as any).toCache = function () {
+		return {
+			type: this.type,
+			data: this.data || null,
+		};
+	};
+
+	// Ajout de la désérialisation du cache (méthode statique)
+	(createBaseImporter as any).fromCache = function (cache: any) {
+		const instance = createBaseImporter(Object.create(Object.prototype));
+		instance.data = cache.data;
+		return instance;
+	};
+
 	return obj;
 }
