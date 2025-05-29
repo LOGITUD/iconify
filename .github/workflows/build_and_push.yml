@@ -40,7 +40,7 @@ jobs:
                 echo "S3_ACCESS_KEY_ID=${{ secrets.S3_ACCESS_KEY_ID }}" >> .env
                 echo "S3_SECRET_ACCESS_KEY=${{ secrets.S3_SECRET_ACCESS_KEY }}" >> .env
 
-            - name: Prepare icons
+            - name: Download and prepare icons
               run: npm run importer
 
             - name: Validate src and icons directories
@@ -52,6 +52,7 @@ jobs:
                     exit 1
                   fi
                   if [ -z "$(ls -A "$d")" ]; then
+                    ls -la "$d"
                     echo "❌ Directory '$d' is empty."
                     exit 1
                   fi
