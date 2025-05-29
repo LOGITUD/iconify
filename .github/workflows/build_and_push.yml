@@ -63,6 +63,7 @@ jobs:
             - name: Build and push Image
               uses: docker/build-push-action@v6
               with:
+                context: .
                 push: true
                 tags: |
                   ${{ secrets.REGISTRY_URL }}/${{ secrets.REGISTRY_REPO }}/iconify:${{ github.ref_name }}
