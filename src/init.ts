@@ -11,9 +11,6 @@ interface InitOptions {
 	// Run update
 	runUpdate?: boolean;
 
-	// Init importers
-	initImporters?: boolean;
-
 	// Importers
 	importers?: Importer[];
 }
@@ -33,10 +30,9 @@ export async function initAPI(options: InitOptions = {}) {
 		importers = await getImporters();
 	}
 
-	if (options.initImporters !== false) {
-		for (let i = 0; i < importers.length; i++) {
-			await importers[i].init();
-		}
+	// Init importers
+	for (let i = 0; i < importers.length; i++) {
+		await importers[i].init();
 	}
 
 	// Update
