@@ -22,6 +22,10 @@ COPY lib/ ./lib/
 COPY cache/ ./cache/
 COPY icons/ ./icons/
 
+RUN ls -al
+
+RUN chmod 777 -R /data/iconify-api/cache
+
 EXPOSE 3000
 
 CMD ["npm", "run", "start"]
