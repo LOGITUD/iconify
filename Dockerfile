@@ -24,6 +24,8 @@ RUN npm run build
 
 RUN npm run init
 
+RUN npm run link
+
 EXPOSE 3000
 
 CMD ["npm", "run", "start"]
