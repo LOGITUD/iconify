@@ -7,12 +7,14 @@ import {
     runSVGO,
     parseColors,
     isEmptyColor,
+    importDirectory,
+    IconSet,
 } from '@iconify/tools';
 
-import { ListObjectsV2Command, GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { ListObjectsV2Command, GetObjectCommand, S3Client, ListObjectsV2CommandOutput } from "@aws-sdk/client-s3";
 import * as fs from 'fs';
 import * as path from 'path';
-import { Readable } from 'stream';
+import { promises, Readable } from 'stream';
 import { finished } from 'stream/promises';
 
 // Config
@@ -77,13 +79,11 @@ type ProcessResult = {
 };
 
 // Function to download and process a directory
-async function processDirectory(directoryPrefix: string): Promise<ProcessResult> {
+async function downloadDirectory(directoryPrefix: string, localDirName: string, localDirPath: string, svgDirPath: string): Promise<ProcessResult> {
     try {
-        // Create local directory for this prefix
-        const localDirName = path.basename(directoryPrefix);
-        const localDirPath = path.join(tempDir, localDirName);
-        const svgDirPath = path.join(outputDir, 'svg', localDirName);
+        console.log(`Downloading directory: ${directoryPrefix}`);
 
+        // Create local directory for this prefix
         if (!fs.existsSync(localDirPath)) {
             fs.mkdirSync(localDirPath, { recursive: true });
         }
@@ -92,133 +92,73 @@ async function processDirectory(directoryPrefix: string): Promise<ProcessResult>
         }
 
         // List objects in this directory
-        const command = new ListObjectsV2Command({
-            Bucket: config.bucketName,
-            Prefix: `${directoryPrefix}/`,
-        });
+        let continuationToken: string | undefined = undefined;
+        do {
+            const command = new ListObjectsV2Command({
+                Bucket: config.bucketName,
+                Prefix: `${directoryPrefix}/`,
+                ContinuationToken: continuationToken,
+            });
 
-        const response = await s3Client.send(command);
+            const response = await s3Client.send(command) as ListObjectsV2CommandOutput;
 
-        // Download each file
-        if (response.Contents) {
-            for (const object of response.Contents) {
+            // Téléchargement en parallèle (20 à la fois)
+            const downloadPromises: Promise<void>[] = [];
+            for (const object of response.Contents ?? []) {
                 if (object.Key && object.Key.endsWith('.svg')) {
                     const fileName = path.basename(object.Key);
                     const localFilePath = path.join(localDirPath, fileName);
                     const svgFilePath = path.join(svgDirPath, fileName);
 
-                    // Get the object from S3
-                    let success = false;
-                    let retries = 3;
-
-                    while (retries > 0 && !success) {
-                        try {
-                            const getObjectCommand = new GetObjectCommand({
-                                Bucket: config.bucketName,
-                                Key: object.Key,
-                            });
-
-                            const { Body } = await s3Client.send(getObjectCommand);
-
-                            if (Body instanceof Readable) {
-                                // Save the file locally
-                                const writeStream = fs.createWriteStream(localFilePath);
-                                await finished(Body.pipe(writeStream));
-
-                                // Copy to SVG directory for processing
-                                fs.copyFileSync(localFilePath, svgFilePath);
+                    const downloadPromise = (async () => {
+                        let success = false;
+                        let retries = 3;
+                        while (retries > 0 && !success) {
+                            try {
+                                const getObjectCommand = new GetObjectCommand({
+                                    Bucket: config.bucketName,
+                                    Key: object.Key,
+                                });
+                                const { Body } = await s3Client.send(getObjectCommand);
+                                if (Body instanceof Readable) {
+                                    const writeStream = fs.createWriteStream(localFilePath);
+                                    await finished(Body.pipe(writeStream));
+                                    fs.copyFileSync(localFilePath, svgFilePath);
+                                }
+                                success = true;
+                            } catch (error) {
+                                console.error(`Failed to download file: ${error}`);
+                                retries--;
                             }
-
-                            success = true;
-                        } catch (error) {
-                            console.error(`Failed to download file: ${error}`);
-                            retries--;
                         }
-                    }
+                        if (!success) {
+                            console.error(`Failed to download file: ${object.Key}`);
+                        }
+                    })();
 
-                    if (!success) {
-                        console.error(`Failed to download file: ${object.Key}`);
+                    downloadPromises.push(downloadPromise);
+
+                    // Limite à 10 téléchargements en parallèle
+                    if (downloadPromises.length >= 20) {
+                        await Promise.all(downloadPromises);
+                        downloadPromises.length = 0;
                     }
                 }
             }
-        }
-
-        // Process the downloaded directory
-        console.log(`Processing directory: ${localDirName}`);
-        const iconSet = importDirectorySync(svgDirPath, {
-            prefix: localDirName,
-        });
-
-        // Validate, clean up, fix palette and optimise
-        iconSet.forEachSync((name, type) => {
-            if (type !== 'icon') {
-                return;
+            // Attendre les derniers téléchargements
+            if (downloadPromises.length > 0) {
+                await Promise.all(downloadPromises);
             }
 
-            const svg = iconSet.toSVG(name);
-            if (!svg) {
-                // Invalid icon
-                iconSet.remove(name);
-                return;
-            }
-
-            // Clean up and optimise icons
-            try {
-                // Clean up icon code
-                cleanupSVG(svg);
-
-                // Assume icon is monotone: replace color with currentColor, add if missing
-                // If icon is not monotone, remove this code
-                parseColors(svg, {
-                    defaultColor: 'currentColor',
-                    callback: (attr, colorStr, color) => {
-                        return !color || isEmptyColor(color)
-                            ? colorStr
-                            : 'currentColor';
-                    },
-                });
-
-                // Optimise
-                runSVGO(svg);
-            } catch (err) {
-                // Invalid icon
-                console.error(`Error parsing ${name}:`, err);
-                iconSet.remove(name);
-                return;
-            }
-
-            // Update icon
-            iconSet.fromSVG(name, svg);
-        });
-
-        // Export
-        const exportData = iconSet.export();
-        console.log(`Exported ${Object.keys(exportData.icons || {}).length} icons from ${localDirName}`);
-
-        // Set infos 
-        exportData.info = {
-            name: localDirName,
-            author: {
-                name: 'Logitud',
-                url: 'https://logitud.fr',
-            },
-            license: {
-                title: 'MIT',
-                spdx: 'MIT',
-                url: 'https://github.com/logitud/lgtd-icons/blob/main/LICENSE.md',
-            }
-        };
-
-        // Save the exported data to a JSON file
-        const exportPath = path.join(outputDir, `${localDirName}.json`);
-        fs.writeFileSync(exportPath, JSON.stringify(exportData, null, 2));
+            continuationToken = response.NextContinuationToken;
+        } while (continuationToken);
 
         return {
-            directory: localDirName,
-            iconCount: Object.keys(exportData.icons || {}).length
+            directory: directoryPrefix,
+            iconCount: 0,
         };
     } catch (error: any) {
-        console.error(`Error processing directory ${directoryPrefix}:`, error);
+        console.error(`Error downloading directory ${directoryPrefix}:`, error);
 
         return {
             directory: directoryPrefix,
@@ -227,6 +167,90 @@ async function processDirectory(directoryPrefix: string): Promise<ProcessResult>
         };
     }
 }
+
+function processDirectory(iconSet: IconSet, directoryPrefix: string, localDirName: string, localDirPath: string, svgDirPath: string): ProcessResult {
+    try {
+            // Process the downloaded directory
+            //console.log(`Processing directory: ${localDirName}`);
+    
+            // Validate, clean up, fix palette and optimise
+            iconSet.forEachSync((name, type) => {
+                if (type !== 'icon') {
+                    return;
+                }
+    
+                const svg = iconSet.toSVG(name);
+                if (!svg) {
+                    // Invalid icon
+                    iconSet.remove(name);
+                    return;
+                }
+    
+                // Clean up and optimise icons
+                try {
+                    // Clean up icon code
+                    cleanupSVG(svg);
+    
+                    // Assume icon is monotone: replace color with currentColor, add if missing
+                    // If icon is not monotone, remove this code
+                    parseColors(svg, {
+                        defaultColor: 'currentColor',
+                        callback: (attr, colorStr, color) => {
+                            return !color || isEmptyColor(color)
+                                ? colorStr
+                                : 'currentColor';
+                        },
+                    });
+    
+                    // Optimise
+                    runSVGO(svg);
+                } catch (err) {
+                    // Invalid icon
+                    console.error(`Error parsing ${name}:`, err);
+                    iconSet.remove(name);
+                    return;
+                }
+    
+                // Update icon
+                iconSet.fromSVG(name, svg);
+            });
+    
+            // Export
+            const exportData = iconSet.export();
+            //console.log(`Exported ${Object.keys(exportData.icons || {}).length} icons from ${localDirName}`);
+    
+            // Set infos 
+            exportData.info = {
+                name: localDirName,
+                author: {
+                    name: 'Logitud',
+                    url: 'https://logitud.fr',
+                },
+                license: {
+                    title: 'MIT',
+                    spdx: 'MIT',
+                    url: 'https://github.com/logitud/lgtd-icons/blob/main/LICENSE.md',
+                }
+            };
+    
+            // Save the exported data to a JSON file
+            const exportPath = path.join(outputDir, `${localDirName}.json`);
+            fs.writeFileSync(exportPath, JSON.stringify(exportData, null, 2));
+    
+            return {
+                directory: localDirName,
+                iconCount: Object.keys(exportData.icons || {}).length
+            };
+        } catch (error: any) {
+            console.error(`Error processing directory ${localDirName}:`, error);
+
+            return {
+                directory: localDirName,
+                iconCount: 0,
+                error: error.message || String(error)
+            };
+        }
+    }
 
 async function minifyJsonFiles() {
     const files = fs.readdirSync(outputDir);
@@ -251,16 +275,38 @@ async function main() {
         const directories = await listS3Directories();
         console.log(`Found ${directories.length} directories in bucket ${config.bucketName}`);
 
-        // Process each directory
-        const promises = directories.map(directory => {
-            console.log(`Starting to process directory: ${directory}`);
-            return processDirectory(directory);
+        const paths = directories.map(directory => {
+            return {
+                directory: directory,
+                localDirName: path.basename(directory),
+                localDirPath: path.join(tempDir, path.basename(directory)),
+                svgDirPath: path.join(outputDir, 'svg', path.basename(directory))
+            }
         });
-        const results: ProcessResult[] = await Promise.all(promises);
+
+        // Process each directory
+        const promisesDownload = directories.map((directory, index) => {
+            //console.log(`Starting to download directory: ${directory}`);
+            return downloadDirectory(directory, paths[index].localDirName, paths[index].localDirPath, paths[index].svgDirPath);
+        });
+        const resultsDownload: ProcessResult[] = await Promise.all(promisesDownload);
+
+        console.log('\nProcessing directories...');
+        const processResults = await Promise.all(
+            directories.map(async (directory, index) => {
+                //console.log(`Importing directory: ${directory}`);
+
+                const iconSet = await importDirectory(paths[index].svgDirPath, {
+                    prefix: paths[index].localDirName,
+                });
+
+                return processDirectory(iconSet, directory, paths[index].localDirName, paths[index].localDirPath, paths[index].svgDirPath);
+            })
+        );
 
         // Output summary
         console.log('\nProcessing Summary:');
-        results.forEach(result => {
+        processResults.forEach(result => {
             if (result.error) {
                 console.log(`- ${result.directory}: Failed - ${result.error}`);
             } else {
@@ -277,7 +323,7 @@ async function main() {
 
         // Remove svg files
         console.log('\nRemoving SVG files...');
-        fs.rmSync(path.join(outputDir, 'svg'), { recursive: true, force: true });
+        //fs.rmSync(path.join(outputDir, 'svg'), { recursive: true, force: true });
 
         console.log('\nAll directories processed successfully!');
     } catch (error) {
