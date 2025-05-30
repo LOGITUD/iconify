@@ -65,7 +65,5 @@ jobs:
               with:
                 context: . # needed for the icons directory
                 push: true
-                tags: |
-                  ${{ secrets.REGISTRY_URL }}/${{ secrets.REGISTRY_REPO }}/iconify:${{ github.ref_name }}
-                  ${{ secrets.REGISTRY_URL }}/${{ secrets.REGISTRY_REPO }}/iconify:latest
+                tags: ${{ secrets.REGISTRY_URL }}/${{ secrets.REGISTRY_REPO }}/iconify:latest
                 platforms: linux/amd64
